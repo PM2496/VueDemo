@@ -1,0 +1,24 @@
+create table passwd_wrong
+(
+    ip   char(20) not null,
+    num  int  not null,
+    YMD char(10) not null,
+    hour int not null,
+    minute int not null,
+    constraint passwd_wrong_pk
+        primary key (ip)
+);
+
+create table ip_forbidden
+(
+    ip   char(20) not null,
+    YMD char(10) not null,
+    hour int not null,
+    minute int not null,
+    constraint ip_forbidden_pk
+        primary key (ip)
+);
+
+
+
+
