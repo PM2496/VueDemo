@@ -34,8 +34,12 @@ export default {
   line-height: 200px;
 }
 .msg {
+  cursor: pointer;
+  font-size: 25px;
+  background:rgba(0,0,0,0);
+  border: none;
   text-align: center;
-  line-height: 40px;
+  line-height: 60px;
   text-decoration-line: none;
   color: #a6c1ee;
 }

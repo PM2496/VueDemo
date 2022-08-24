@@ -46,7 +46,7 @@
             <input id="fileInput" ref="upload" type="file">
           </div>
           <div class="inputbox">
-            <input type="text" v-model="uploadName" placeholder="输入文件名"
+            <input id="fileNameInput" type="text" v-model="uploadName" placeholder="输入文件名"
                    onkeyup="this.value=this.value.replace(/[(/,<>: |'\\)]/g,'')">
           </div>
           <button @click="upload" class="bt_inputbox">Upload</button>
@@ -190,7 +190,12 @@ export default {
             alert('文件夹创建失败')
             break
         }
+        this.clearInput()
       })
+    },
+    clearInput () {
+      document.getElementById('fileInput').value = ''
+      this.uploadName = ''
     },
     del () {
       let delFiles = []
