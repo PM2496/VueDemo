@@ -87,12 +87,12 @@ export default {
               // 存储token到LocalStorage
               localStorage.setItem('token', token)
               this.$router.push({
-                name: 'FilePage',
-                params: {
-                  email: response.data.email,
-                  username: response.data.username,
-                  files: response.data.filelist
-                }
+                name: 'FilePage'
+                // params: {
+                //   email: response.data.email,
+                //   username: response.data.username,
+                //   files: response.data.filelist
+                // }
               })
               break
             case 1:
@@ -104,6 +104,9 @@ export default {
             case 3:
               this.$router.push('wrongusername')
               break
+            case 4:
+              localStorage.setItem('token', response.data.token)
+              this.$router.push('/RootPage')
           }
         })
       }

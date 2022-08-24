@@ -21,36 +21,11 @@ export default {
   name: 'RootPage',
   methods: {
     logout () {
-      this.$http.get('/logout').then(response => {
-        console.log('response:')
-        console.log(response)
-        /*
-        statusCode
-        0: 成功
-        1: 失败
-         */
-        if (!response.headers.statusCode) {
-          // 清除token
-          localStorage.removeItem('token')
-          this.$router.push('/')
-        } else {
-          console.log('token清除失败')
-          alert('退出失败')
-        }
-      })
+      localStorage.removeItem('token')
+      this.$router.push('/')
     },
     toRSU () {
-      this.$http({
-        url: '/RSU',
-        method: 'get'
-      }).then(response => {
-        this.$router.push({
-          name: 'RSU',
-          params: {
-            usersInf: response.data
-          }
-        })
-      })
+      this.$router.push('/RSU')
     },
     toLogs () {
       this.$http({

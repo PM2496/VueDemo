@@ -42,7 +42,7 @@ axios.interceptors.request.use(
 // 响应拦截器，状态码对应跳转页面 TODO ?未知跳转是否有效
 axios.interceptors.response.use(
   response => {
-    const status = response.data.status
+    const status = response.status
     switch (status) {
       case 200:
         return response

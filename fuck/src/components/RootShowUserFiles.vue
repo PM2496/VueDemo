@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <p class="msg_username">当前查看的用户:</p>
-    <p class="msg_username">{{ R_username }}</p>
+    <p class="msg_username">{{ username }}</p>
     <span>
       <button @click="logout" class="bt_logout">登出</button>
     </span>
@@ -34,7 +34,7 @@
             <Checkbox class="checkbox" v-model="checkedArray[index]" @change="onCheckChanged"></Checkbox>
           </td>
           <td>{{index}}</td>
-          <td>{{item.fileName}}</td>
+          <td>{{item}}</td>
         </tr>
         </tbody>
       </table>
@@ -44,7 +44,7 @@
         <h2>Upload</h2>
         <span>
           <div class="inputbox">
-            <input id="fileInput" @change="addFile" ref="inputer" type="file">
+            <input id="fileInput" ref="upload" type="file">
           </div>
           <div class="inputbox">
             <input type="text" v-model="uploadName" placeholder="输入文件名" onkeyup="this.value=this.value.replace(/[(/,<>: |'\\)]/g,'')">
@@ -59,91 +59,55 @@
 
 <script>
 import Checkbox from '../widget/Checkbox'
-import JSZip from 'jszip'
-import FileSaver from 'file-saver'
-
-let formData = new FormData() // new一个formData事件
-
-// 把文件名指向文件并转成ArrayBuffer对象
-const getFile = fileName => {
-  return new Promise((resolve, reject) => {
-    this.$http({
-      method: 'post',
-      url: '/FileDownload',
-      data: {
-        email: this.R_email,
-        fileName: fileName
-      },
-      responseType: 'arraybuffer'
-    }).then(resp => {
-      /*
-      statusCode
-      0: 成功
-      1: 文件不存在
-      2: 用户文件夹不存在
-       */
-      switch (resp.headers.statusCode) {
-        case 0:
-          resolve(resp.data)
-          break
-        case 1:
-          console.log('文件不存在:', fileName)
-          alert('文件不存在:' + fileName)
-          break
-        case 2:
-          console.log('用户文件夹不存在')
-          alert('用户文件夹不存在')
-          break
-      }
-    }).catch(error => {
-      reject(error.toString())
-    })
-  })
-}
 
 export default {
   name: 'RootShowUserFiles',
   components: {Checkbox},
   data () {
     return {
-      R_username: this.$route.params.R_username,
-      R_email: this.$route.params.R_email,
+      email: JSON.parse(this.$route.query.email),
+      username: JSON.parse(this.$route.query.name),
       checkedArray: [],
       isAllChecked: false,
-      files: this.$route.params.files,
+      files: [],
       dialogFormVisible: false,
       uploadFile: [],
       uploadName: ''
     }
   },
   mounted () {
-    // this.$nextTick这个方法作用是，当数据被修改后使用这个方法，会回调获取更新后的dom再渲染出来
-    this.$nextTick(function () {
-      this.setCheckedArray()
-    })
+    // 不知道为什么请求拦截器不对mounted里的请求进行拦截，只能单独设置token了
+    this.reloadFile()
+  },
+  watch: {
+    '$route': 'reloadFile'
   },
   methods: {
+    reloadFile () {
+      const config = {
+        headers: {
+          token: localStorage.getItem('token')
+        }
+      }
+      let formdata = new FormData()
+      formdata.append('email', this.email)
+      const _this = this
+      this.$http.post('/RootShowUserFile', formdata, config).then(response => {
+        if (response.data.status === 404) {
+          _this.$router.push('/404')
+          return
+        }
+        // console.log(response.data)
+        _this.files = response.data.files
+        _this.setCheckedArray()
+      })
+    },
     toRootPage () {
       this.$router.push('/RootPage')
     },
     logout () {
-      this.$http.get('/logout').then(response => {
-        console.log('response:')
-        console.log(response)
-        /*
-        statusCode
-        0: 成功
-        1: 失败
-         */
-        if (!response.headers.statusCode) {
-          // 清除token
-          localStorage.removeItem('token')
-          this.$router.push('/')
-        } else {
-          console.log('token清除失败')
-          alert('退出失败')
-        }
-      })
+      localStorage.removeItem('token')
+      this.$router.push('/')
     },
     // 初始化CheckedArray数组
     setCheckedArray () {
@@ -166,12 +130,18 @@ export default {
           delFiles.push(this.files[i])
         }
       }
+      console.log(delFiles)
+      if (delFiles.length === 0) {
+        alert('请选择你要删除的文件')
+        return
+      }
+      const _this = this
       this.$http({
-        url: '/FileDelete',
+        url: '/RootFileDelete',
         method: 'post',
         data: {
-          delFiles: this.delFiles,
-          email: this.R_email
+          email: _this.email,
+          delFiles: delFiles
         }
       }).then(resp => {
         /*
@@ -180,13 +150,14 @@ export default {
         1: 文件删除失败
         2: 用户文件夹不存在
          */
-        switch (resp.headers.statusCode) {
+        switch (resp.data.code) {
           case 0:
-            delFiles.forEach(file => {
-              const idx = this.files.map(item => item).indexOf(file)
-              this.files.splice(idx, 1)// 删除
-            })
-            this.setCheckedArray() // 重置勾选框
+            // delFiles.forEach(file => {
+            //   const idx = this.files.map(item => item).indexOf(file)
+            //   this.files.splice(idx, 1)// 删除
+            // })
+            _this.files = resp.data.files
+            _this.setCheckedArray() // 重置勾选框
             break
           case 1:
             alert('文件删除失败！')
@@ -197,25 +168,71 @@ export default {
         }
       })
     },
-    addFile (e) {
-      let self = this
-      let inputDOM = self.$refs.inputer
-      let file = inputDOM.files[0] // 通过DOM取文件数据
-      formData.append('uploadfile', file) // 将file属性添加到formData里
-    },
+    // addFile (e) {
+    //   let formData = new FormData()
+    //   let self = this
+    //   let inputDOM = self.$refs.inputer
+    //   let file = inputDOM.files[0] // 通过DOM取文件数据
+    //   formData.append('uploadfile', file) // 将file属性添加到formData里
+    // },
     upload () {
-      formData.append('resetfilename', this.uploadName) // 后台可接收的参数
-      formData.append('email', this.R_email)
+      let formData = new FormData()
+      const _this = this
+      let file = _this.$refs.upload.files[0]
+      if (file == null) {
+        alert('上传的文件不能为空')
+        return
+      }
+      formData.append('email', _this.email)
+      formData.append('file', file)
+      formData.append('filename', this.uploadName)
+      // formData.append('email', this.email)
       this.$http({
         method: 'post',
-        url: '/FileUpload',
+        url: '/RootFileUpload',
         data: formData,
         header: {
           'Content-Type': 'multipart/form-data'
         }
-      }).then((res) => {
+      }).then((resp) => {
+        /*
+        statusCode
+        0:上传成功
+        1:已存在同名文件
+        2:禁止上传jsp文件
+        3:文件上传失败
+        4:只允许上传10M以下文件
+        5:文件夹创建失败
+         */
         console.log('文件上传响应:')
-        console.log(res)
+        console.log(resp)
+        switch (resp.data.code) {
+          case 0:
+            console.log('上传成功')
+            _this.files = resp.data.files
+            alert('上传成功')
+            break
+          case 1:
+            console.log('已存在同名文件')
+            alert('已存在同名文件')
+            break
+          case 2:
+            console.log('禁止上传jsp文件')
+            alert('禁止上传jsp文件')
+            break
+          case 3:
+            console.log('文件上传失败')
+            alert('文件上传失败')
+            break
+          case 4:
+            console.log('只允许上传10M以下文件')
+            alert('只允许上传10M以下文件')
+            break
+          case 5:
+            console.log('文件夹创建失败')
+            alert('文件夹创建失败')
+            break
+        }
       })
     },
     togglePopOut () {
@@ -224,58 +241,37 @@ export default {
     },
     download () {
       let downloadFiles = []
-      let downloadIndex = []
       for (let i = 0; i < this.checkedArray.length; i++) {
         if (this.checkedArray[i]) {
-          downloadFiles.push(this.checkedArray[i])
-          downloadIndex.push(i)
+          downloadFiles.push(this.files[i])
         }
       }
-      // this.$http({
-      //   url: '/FileDownload',
-      //   method: 'post',
-      //   data: {
-      //     downloadFiles: this.delFiles,
-      //     email: this.email
-      //   }
-      // }).then(resp => {
-      //   /*
-      //   statusCode
-      //   0: 成功
-      //   1: 文件删除失败
-      //   2: 用户文件夹不存在
-      //    */
-      //   switch (resp.headers.statusCode) {
-      //     case 0:
-      //       for (let idx in delIndex) {
-      //         this.checkedArray[idx] = null
-      //       }
-      //       break
-      //     case 1:
-      //       alert('文件删除失败！')
-      //       break
-      //     case 2:
-      //       alert('用户文件夹不存在！')
-      //       break
-      //   }
-      // })
-      // TODO ？有效性未知
-      // 多文件下载为zip
-      const zip = new JSZip()
-      const cache = {}
-      const promises = []
-      downloadFiles.forEach(item => {
-        const promise = getFile(item).then(data => {
-          zip.file(item, data, { binary: true }) // 逐个添加文件
-          cache[item] = data
+      for (let filename of downloadFiles) {
+        let formdata = new FormData()
+        formdata.append('email', this.email)
+        formdata.append('filename', filename)
+
+        const config = {
+          method: 'post',
+          url: 'http://localhost:8080/RootFileDownload',
+          headers: {
+            //  和后端设置的一样
+            'Content-Type': 'application/octet-stream;charset=UTF-8'
+          },
+          responseType: 'blob',
+          data: formdata
+        }
+        this.$http(config).then(function (resp) {
+          const url = window.URL.createObjectURL(new Blob([resp.data]))
+          const link = document.createElement('a')
+          link.href = url
+          console.log(resp)
+          // let fileName = resp.headers['content-disposition'].split('filename=');
+          link.setAttribute('download', filename)
+          document.body.appendChild(link)
+          link.click()
         })
-        promises.push(promise)
-      })
-      Promise.all(promises).then(() => {
-        zip.generateAsync({type: 'blob'}).then(content => { // 生成二进制流
-          FileSaver.saveAs(content, '批量下载.zip') // 利用file-saver保存文件
-        })
-      })
+      }
     }
   }
 }

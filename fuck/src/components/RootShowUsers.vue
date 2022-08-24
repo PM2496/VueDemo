@@ -19,12 +19,12 @@
     </form>
     <div class="wrapper">
       <el-table
-        :data="usersInf.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))"
+        :data="userInf.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))"
         style="width: 100%"
-        border="true">
+        :border="true">
         <el-table-column
           label="用户名"
-          prop="username"
+          prop="name"
           align="center">
         </el-table-column>
         <el-table-column
@@ -38,7 +38,7 @@
             <el-input
               v-model="search"
               size="mini"
-              placeholder="输入关键字搜索"/>
+              placeholder="输入用户名搜索"/>
           </template>
           <template slot-scope="scope">
             <el-button
@@ -57,15 +57,15 @@
         <h2>增添用户</h2>
         <form>
           <div class="inputbox">
-            <input v-model="username" type="text" placeholder="username" class="input-item"
+            <input v-model="user.name" type="text" placeholder="username" class="input-item"
                    onkeyup="this.value=this.value.replace(/[, <>/|'\\]/g,'')" autofocus="autofocus">
           </div>
           <div class="inputbox">
-            <input v-model="password" type="password" placeholder="password" class="input-item"
+            <input v-model="user.password" type="password" placeholder="password" class="input-item"
                    onkeyup="this.value=this.value.replace(/[, <>/|'\\]/g,'')">
           </div>
           <div class="inputbox">
-            <input v-model="email" type="email" placeholder="email" class="input-item"
+            <input v-model="user.email" type="email" placeholder="email" class="input-item"
                    onkeyup="this.value=this.value.replace(/[, <>/|'\\]/g,'')">
           </div>
           <button @click="addUser" class="bt_inputbox">增添用户</button><!--TODO check-->
@@ -81,43 +81,50 @@ export default {
   name: 'RootShowUsers',
   data () {
     return {
-      username: '',
-      password: '',
-      email: '',
-      usersInf: this.$route.params.usersInf,
+      user: {
+        username: '',
+        password: '',
+        email: ''
+      },
+      userInf: [],
       search: ''
     }
   },
+  mounted () {
+    // 不知道为什么请求拦截器不对mounted里的请求进行拦截，只能单独设置token了
+    this.reloadFile()
+  },
+  watch: {
+    '$route': 'reloadFile'
+  },
   methods: {
-    handleCheckFile (index, row) {
-      console.log(index, row)
-      this.$http({
-        url: '/RSUF',
-        method: 'post',
-        data: {
-          bt_ShowFile: row.email,
-          bt_ShowFileName: row.username
+    reloadFile () {
+      const config = {
+        headers: {
+          token: localStorage.getItem('token')
         }
-      }).then(response => {
-        console.log('response:')
-        console.log(response)
-        this.$router.push({
-          name: 'RSUF',
-          params: {
-            R_username: response.data.username,
-            files: response.data.files,
-            R_email: response.data.email
-          }
-        })
+      }
+      const _this = this
+      this.$http.post('/RootShowUsers', null, config).then(response => {
+        if (response.data.status === 404) {
+          _this.$route.push('/404')
+          return
+        }
+        // console.log(response.data.status)
+        _this.userInf = response.data.userInf
       })
+    },
+    handleCheckFile (index, row) {
+      this.$router.push({path: '/RSUF', query: {email: JSON.stringify(row.email), name: JSON.stringify(row.name)}})
     },
     handleDelete (index, row) {
       console.log(index, row)
+      const _this = this
       this.$http({
-        url: '/RDU',
+        url: '/RootDelUser',
         method: 'post',
         data: {
-          bt_del: this.row.email // 向后台传递要删除的邮箱
+          delEmail: row.email // 向后台传递要删除的邮箱
         }
       }).then((res) => {
         /*
@@ -126,9 +133,10 @@ export default {
         1:用户文件夹删除失败
         2:删除失败
          */
-        switch (res.headers.statusCode) {
+        switch (res.data.code) {
           case 0:
-            this.usersInf.splice(this.index, 1) // 删除某一行
+            _this.userInf = res.data.userInf
+            alert('删除成功')// 删除某一行
             break
           case 1:
             console.log('用户文件夹删除失败')
@@ -141,38 +149,26 @@ export default {
       })
     },
     logout () {
-      this.$http.get('/logout').then(response => {
-        console.log('response:')
-        console.log(response)
-        /*
-        statusCode
-        0: 成功
-        1: 失败
-         */
-        if (!response.headers.statusCode) {
-          // 清除token
-          localStorage.removeItem('token')
-          this.$router.push('/')
-        } else {
-          console.log('token清除失败')
-          alert('退出失败')
-        }
-      })
+      localStorage.removeItem('token')
+      this.$router.push('/')
     },
     toRootPage () {
       this.$router.push('/RootPage')
     },
     addUser () {
+      const _this = this
       this.$http({
-        url: '/RAU',
+        url: '/RootAddUser',
         method: 'post',
-        data: {
-          username: this.username,
-          password: this.password,
-          email: this.email
-        }
+        data: _this.user
       }).then((res) => {
-        console.log(res)
+        // console.log(res)
+        if (res.data.code === 1) {
+          alert('未成功添加用户')
+          return
+        }
+        _this.userInf = res.data.userInf
+        alert('成功添加用户')
       }).catch((error) => {
         console.log(error)
       })

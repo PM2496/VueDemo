@@ -60,47 +60,6 @@
 
 <script>
 import Checkbox from '../widget/Checkbox'
-import JSZip from 'jszip'
-import FileSaver from 'file-saver'
-
-// let formData = new FormData() // new一个formData事件
-
-// 把文件名指向文件并转成ArrayBuffer对象
-const getFile = fileName => {
-  return new Promise((resolve, reject) => {
-    this.$http({
-      method: 'post',
-      url: '/FileDownload',
-      data: {
-        email: this.email,
-        fileName: fileName
-      },
-      responseType: 'arraybuffer'
-    }).then(resp => {
-      /*
-      statusCode
-      0: 成功
-      1: 文件不存在
-      2: 用户文件夹不存在
-       */
-      switch (resp.status.code) {
-        case 0:
-          resolve(resp.data)
-          break
-        case 1:
-          console.log('文件不存在:', fileName)
-          alert('文件不存在:' + fileName)
-          break
-        case 2:
-          console.log('用户文件夹不存在')
-          alert('用户文件夹不存在')
-          break
-      }
-    }).catch(error => {
-      reject(error.toString())
-    })
-  })
-}
 
 export default {
   name: 'FilePage',
@@ -114,36 +73,45 @@ export default {
       isAllChecked: false,
       // files: this.$route.params.files,
       // files: ['file.txt', 'file.jpg', 'file.html', 'file.json'],
-      files: this.$route.params.files,
+      files: [],
       uploadFile: [],
       uploadName: ''
     }
   },
+  // mounted () {
+  //   // this.$nextTick这个方法作用是，当数据被修改后使用这个方法，会回调获取更新后的dom再渲染出来
+  //   this.$nextTick(function () {
+  //     this.setCheckedArray()
+  //   })
+  // },
   mounted () {
-    // this.$nextTick这个方法作用是，当数据被修改后使用这个方法，会回调获取更新后的dom再渲染出来
-    this.$nextTick(function () {
-      this.setCheckedArray()
-    })
+    // 不知道为什么请求拦截器不对mounted里的请求进行拦截，只能单独设置了
+    this.reloadFile()
+  },
+  watch: {
+    '$route': 'reloadFile'
   },
   methods: {
-    logout () {
-      this.$http.get('/logout').then(response => {
-        console.log('response:')
-        console.log(response)
-        /*
-        statusCode
-        0: 成功
-        1: 失败
-         */
-        if (!response.data.code) {
-          // 清除token
-          localStorage.removeItem('token')
-          this.$router.push('/')
-        } else {
-          console.log('token清除失败')
-          alert('退出失败')
+    reloadFile () {
+      const config = {
+        headers: {
+          token: localStorage.getItem('token')
         }
+      }
+      const _this = this
+      this.$http.post('/filelist', null, config).then(response => {
+        if (response.data.status === 404) {
+          _this.$router.push('/404')
+          return
+        }
+        _this.files = response.data.files
+        _this.username = response.data.username
+        _this.setCheckedArray()
       })
+    },
+    logout () {
+      localStorage.removeItem('token')
+      this.$router.push('/')
     },
     // 初始化CheckedArray数组
     setCheckedArray () {
@@ -175,7 +143,7 @@ export default {
       }
       formData.append('file', file)
       formData.append('filename', this.uploadName)
-      formData.append('email', this.email)
+      // formData.append('email', this.email)
       this.$http({
         method: 'post',
         url: '/upload',
@@ -231,12 +199,17 @@ export default {
           delFiles.push(this.files[i])
         }
       }
+      console.log(delFiles)
+      if (delFiles.length === 0) {
+        alert('请选择你要删除的文件')
+        return
+      }
+      const _this = this
       this.$http({
-        url: '/FileDelete',
+        url: '/fileDelete',
         method: 'post',
         data: {
-          delFiles: this.delFiles,
-          email: this.email
+          delFiles: delFiles
         }
       }).then(resp => {
         /*
@@ -245,13 +218,14 @@ export default {
         1: 文件删除失败
         2: 用户文件夹不存在
          */
-        switch (resp.headers.statusCode) {
+        switch (resp.data.code) {
           case 0:
-            delFiles.forEach(file => {
-              const idx = this.files.map(item => item).indexOf(file)
-              this.files.splice(idx, 1)// 删除
-            })
-            this.setCheckedArray() // 重置勾选框
+            // delFiles.forEach(file => {
+            //   const idx = this.files.map(item => item).indexOf(file)
+            //   this.files.splice(idx, 1)// 删除
+            // })
+            _this.files = resp.data.files
+            _this.setCheckedArray() // 重置勾选框
             break
           case 1:
             alert('文件删除失败！')
@@ -264,58 +238,36 @@ export default {
     },
     download () {
       let downloadFiles = []
-      let downloadIndex = []
       for (let i = 0; i < this.checkedArray.length; i++) {
         if (this.checkedArray[i]) {
-          downloadFiles.push(this.checkedArray[i])
-          downloadIndex.push(i)
+          downloadFiles.push(this.files[i])
         }
       }
-      // this.$http({
-      //   url: '/FileDownload',
-      //   method: 'post',
-      //   data: {
-      //     downloadFiles: this.delFiles,
-      //     email: this.email
-      //   }
-      // }).then(resp => {
-      //   /*
-      //   statusCode
-      //   0: 成功
-      //   1: 文件删除失败
-      //   2: 用户文件夹不存在
-      //    */
-      //   switch (resp.headers.statusCode) {
-      //     case 0:
-      //       for (let idx in delIndex) {
-      //         this.checkedArray[idx] = null
-      //       }
-      //       break
-      //     case 1:
-      //       alert('文件删除失败！')
-      //       break
-      //     case 2:
-      //       alert('用户文件夹不存在！')
-      //       break
-      //   }
-      // })
-      // TODO ？有效性未知
-      // 多文件下载为zip
-      const zip = new JSZip()
-      const cache = {}
-      const promises = []
-      downloadFiles.forEach(item => {
-        const promise = getFile(item).then(data => {
-          zip.file(item, data, { binary: true }) // 逐个添加文件
-          cache[item] = data
+      for (let filename of downloadFiles) {
+        let formdata = new FormData()
+        formdata.append('filename', filename)
+
+        const config = {
+          method: 'post',
+          url: 'http://localhost:8080/fileDownload',
+          headers: {
+            //  和后端设置的一样
+            'Content-Type': 'application/octet-stream;charset=UTF-8'
+          },
+          responseType: 'blob',
+          data: formdata
+        }
+        this.$http(config).then(function (resp) {
+          const url = window.URL.createObjectURL(new Blob([resp.data]))
+          const link = document.createElement('a')
+          link.href = url
+          console.log(resp)
+          // let fileName = resp.headers['content-disposition'].split('filename=');
+          link.setAttribute('download', filename)
+          document.body.appendChild(link)
+          link.click()
         })
-        promises.push(promise)
-      })
-      Promise.all(promises).then(() => {
-        zip.generateAsync({type: 'blob'}).then(content => { // 生成二进制流
-          FileSaver.saveAs(content, '批量下载.zip') // 利用file-saver保存文件
-        })
-      })
+      }
     },
     togglePopOut () {
       const popOut = document.getElementById('popout_upload')

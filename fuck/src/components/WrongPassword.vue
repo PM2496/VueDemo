@@ -25,7 +25,7 @@ export default {
       this.$router.push('/')
     },
     toLogin () {
-      this.$router.push('/login.html')
+      this.$router.push('/login')
     }
   }
 }

@@ -79,6 +79,7 @@ export default {
       } else if (!this.validE) {
         alert('邮箱长度不合法，请重新输入')
       } else {
+        const _this = this
         this.$http.post('/register', this.user).then(res => {
           // console.log(res)
           /*
@@ -89,21 +90,22 @@ export default {
           3: EmailExist
           4: SignUpFail
            */
-          switch (res.data) {
+          console.log(res)
+          switch (res.data.code) {
             case 0:
-              this.$router.push('/SignUpSuccess')
+              _this.$router.push('/SignUpSuccess')
               break
             case 1:
               alert('非法输入！请重新注册！')
               break
             case 2:
-              this.$router.push('/ServerError')
+              _this.$router.push('/ServerError')
               break
             case 3:
-              this.$router.push('/EmailExist')
+              _this.$router.push('/EmailExist')
               break
             case 4:
-              this.$router.push('/SignUpFail')
+              _this.$router.push('/SignUpFail')
               break
           }
         })
