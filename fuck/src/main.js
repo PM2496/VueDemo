@@ -39,13 +39,13 @@ axios.interceptors.request.use(
   error => {
     return Promise.reject(error)
   })
-// 响应拦截器，状态码对应跳转页面 TODO ?未知跳转是否有效
+// 响应拦截器，状态码对应跳转页面
 axios.interceptors.response.use(
   response => {
-    const status = response.status
-    switch (status) {
-      case 200:
-        return response
+  },
+  error => {
+    console.log('axios中response报错', error)
+    switch (error.response.status) {
       case 404:
         vm.$router.push('/404')
         break
@@ -53,17 +53,17 @@ axios.interceptors.response.use(
         vm.$router.push('/403')
         break
       case 405:
-        vm.$router.push('/405')
+        this.$router.push('/405')
         break
       case 400:
         vm.$router.push('/400')
         break
+      case 500:
+        vm.$router.push('/500')
+        break
       default:
         vm.$router.push('/')
     }
-  },
-  error => {
-    console.log('axios中response报错', error)
     return Promise.reject(error)
   }
 )

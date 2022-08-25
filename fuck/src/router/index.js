@@ -23,6 +23,7 @@ import E400 from '../components/E400'
 import E403 from '../components/E403'
 import E404 from '../components/E404'
 import E405 from '../components/E405'
+import E500 from '../components/E500'
 
 Vue.use(VueRouter)
 const router = new VueRouter({
@@ -143,6 +144,11 @@ const router = new VueRouter({
       path: '/405',
       name: 'E405',
       component: E405
+    },
+    {
+      path: '/500',
+      name: 'E500',
+      component: E500
     }
   ]
 })
