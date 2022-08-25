@@ -42,6 +42,9 @@ axios.interceptors.request.use(
 // 响应拦截器，状态码对应跳转页面
 axios.interceptors.response.use(
   response => {
+    if (response.status === 200) {
+      return response
+    }
   },
   error => {
     console.log('axios中response报错', error)
