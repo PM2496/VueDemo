@@ -59,12 +59,12 @@ export default {
   transform: translate(-50%,-50%);
 }
 
-.login-wrapper .header{
-  font-size: 30px;
-  font-weight: bold;
-  text-align: center;
-  line-height: 200px;
-}
+/*.login-wrapper .header{*/
+/*  font-size: 30px;*/
+/*  font-weight: bold;*/
+/*  text-align: center;*/
+/*  line-height: 200px;*/
+/*}*/
 
 .login-wrapper .form-wrapper {
   display: block;

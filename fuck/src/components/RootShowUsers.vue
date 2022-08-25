@@ -10,13 +10,13 @@
 
     <button class="bt_add" @click="togglePopOut">增添用户</button>
 
-    <form action="" class="search-bar"><!--TODO 搜素框-->
-      <input type="search" name="search" pattern=".*\S.*" placeholder="Search" required="required"
-             onkeyup="this.value=this.value.replace(/[(/,<>: |'\\)]/g,'')">
-      <button class="search-btn" type="submit">
-        <span>Search</span>
-      </button>
-    </form>
+<!--    <form action="" class="search-bar">&lt;!&ndash;TODO 搜素框&ndash;&gt;-->
+<!--      <input type="search" name="search" pattern=".*\S.*" placeholder="Search" required="required"-->
+<!--             onkeyup="this.value=this.value.replace(/[(/,<>: |'\\)]/g,'')">-->
+<!--      <button class="search-btn" type="submit">-->
+<!--        <span>Search</span>-->
+<!--      </button>-->
+<!--    </form>-->
     <div class="wrapper">
       <el-table
         :data="userInf.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))"

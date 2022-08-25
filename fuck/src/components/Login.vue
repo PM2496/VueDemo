@@ -79,6 +79,7 @@ export default {
           1: wrongpassword 密码错误
           2: IPForbidden IP封禁
           3: wrongusername 用户不存在
+          4: ROOT
            */
           console.log(response.data)
           switch (response.data.code) {

@@ -120,7 +120,7 @@ export default {
   font-size: 30px;
   font-weight: bold;
   text-align: center;
-  line-height: 200px;
+  line-height: 150px;
 }
 .input-item{
   display: block;

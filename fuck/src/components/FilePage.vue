@@ -9,7 +9,6 @@
     <button @click="download" class="bt_download">下载</button>
     <button @click="togglePopOut" class="bt_upload">上传</button>
     <div class="wrapper">
-      <!--n+1行，3列（勾选列、序号列、文件名列（、文件大小列））-->
       <!--TODO 实现分页功能-->
       <table>
         <colgroup>
@@ -142,7 +141,7 @@ export default {
         return
       }
       formData.append('file', file)
-      formData.append('filename', this.uploadName)
+      formData.append('filename', this.uploadName + '.' + file.name.split('.')[1])
       // formData.append('email', this.email)
       this.$http({
         method: 'post',
@@ -193,6 +192,7 @@ export default {
         this.clearInput()
       })
     },
+    // 清除文件上传input框
     clearInput () {
       document.getElementById('fileInput').value = ''
       this.uploadName = ''
@@ -275,6 +275,7 @@ export default {
       }
     },
     togglePopOut () {
+      this.clearInput()
       const popOut = document.getElementById('popout_upload')
       popOut.classList.toggle('active')
     }
