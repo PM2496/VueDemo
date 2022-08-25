@@ -3,6 +3,16 @@
     <p class="msg">日志</p>
 
     <span>
+      <el-input
+        placeholder="查询日期格式20220101"
+        v-model="reqDate"
+        clearable
+        class="elInput"
+        @change="reloadLogs">
+      </el-input>
+    </span>
+
+    <span>
       <button @click="logout" class="bt_logout">登出</button>
     </span>
 
@@ -25,7 +35,7 @@
         <tr v-for="(item, index) in logs" :key="index">
           <td>{{index}}</td>
           <td>{{item.ip}}</td>
-          <td>{{item.data}}</td>
+          <td>{{item.date}}</td>
           <td>{{item.method}}</td>
           <td>{{item.url}}</td>
           <td>{{item.protocol}}</td>
@@ -43,31 +53,49 @@ export default {
   name: 'Logs',
   data () {
     return {
-      logs: this.$route.params.logs
+      logs: [],
+      reqDate: ''
     }
   },
+  // mounted () {
+  //   // 不知道为什么请求拦截器不对mounted里的请求进行拦截，只能单独设置了
+  //   this.reloadLogs()
+  //   console.log('token', localStorage.getItem('token'))
+  // },
+  // watch: {
+  //   '$route': 'reloadLogs'
+  // },
   methods: {
     logout () {
-      this.$http.get('/logout').then(response => {
-        console.log('response:')
-        console.log(response)
-        /*
-        statusCode
-        0: 成功
-        1: 失败
-         */
-        if (!response.headers.statusCode) {
-          // 清除token
-          localStorage.removeItem('token')
-          this.$router.push('/')
-        } else {
-          console.log('token清除失败')
-          alert('退出失败')
-        }
-      })
+      localStorage.removeItem('token')
+      this.$router.push('/')
     },
     toRootPage () {
-      this.$router.push('RootPage')
+      this.$router.push('/RootPage')
+    },
+    reloadLogs () {
+      // const config = {
+      //   headers: {
+      //     token: localStorage.getItem('token')
+      //   }
+      // }
+      // if (this.reqDate.length === 0) {TODO 校验日期格式
+      //   console.log('输入日期')
+      //   alert()
+      // }
+      this.$http({
+        url: '/ShowLogs',
+        method: 'get',
+        headers: {
+          token: localStorage.getItem('token')
+        },
+        params: {
+          date: this.reqDate
+        }
+      }).then(resp => {
+        console.log('logs', this.logs)
+        this.logs = resp.data.logs
+      })
     }
   }
 }
@@ -203,4 +231,8 @@ body {
   transform: translateY(-1px);
 }
 
+.elInput {
+  width: 200px;
+  float: left;
+  padding: 1.3em 3em;}
 </style>

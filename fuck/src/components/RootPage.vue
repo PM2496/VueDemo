@@ -28,17 +28,21 @@ export default {
       this.$router.push('/RSU')
     },
     toLogs () {
-      this.$http({
-        url: '/logs',
-        method: 'get'
-      }).then(resp => {
-        this.$router.push({
-          name: 'logs',
-          params: {
-            logs: resp.data
-          }
-        })
-      })
+      this.$router.push('/logs')
+      // this.$http({
+      //   url: '/ShowLogs',
+      //   method: 'get',
+      //   params: {
+      //     date: '20220825'
+      //   }
+      // }).then(resp => {
+      //   this.$router.push({
+      //     name: 'logs',
+      //     params: {
+      //       logs: resp.data
+      //     }
+      //   })
+      // })
     }
   }
 }
