@@ -57,14 +57,6 @@ export default {
       reqDate: ''
     }
   },
-  // mounted () {
-  //   // 不知道为什么请求拦截器不对mounted里的请求进行拦截，只能单独设置了
-  //   this.reloadLogs()
-  //   console.log('token', localStorage.getItem('token'))
-  // },
-  // watch: {
-  //   '$route': 'reloadLogs'
-  // },
   methods: {
     logout () {
       localStorage.removeItem('token')
@@ -74,15 +66,13 @@ export default {
       this.$router.push('/RootPage')
     },
     reloadLogs () {
-      // const config = {
-      //   headers: {
-      //     token: localStorage.getItem('token')
-      //   }
-      // }
-      // if (this.reqDate.length === 0) {TODO 校验日期格式
-      //   console.log('输入日期')
-      //   alert()
-      // }
+      // 正则检查202X年份，及30、31月份，2月检查1-29天
+      const regex = /(202[0-9])(((0[13578]|1[02])(0[0-9]|[12][0-9]|3[01]))|((0[469]|11)(0[0-9]|[12][0-9]|30))|((02)(0[0-9]|[12][0-9])))/g
+      if (!regex.test(this.reqDate)) {
+        console.log('日期格式不规范')
+        alert('日期格式不规范')
+        return
+      }
       this.$http({
         url: '/ShowLogs',
         method: 'get',
@@ -93,7 +83,18 @@ export default {
           date: this.reqDate
         }
       }).then(resp => {
+        console.log('response', resp)
+        /*
+        code
+        0:成功
+        1:失败
+         */
         console.log('logs', this.logs)
+        if (resp.data.code) {
+          console.log('查询日期无日志记录')
+          alert('查询日期无日志记录')
+          return
+        }
         this.logs = resp.data.logs
       })
     }
