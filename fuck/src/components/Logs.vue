@@ -3,6 +3,16 @@
     <p class="msg">日志</p>
 
     <span>
+      <el-input
+        placeholder="查询日期格式20220101"
+        v-model="reqDate"
+        clearable
+        class="elInput"
+        @change="reloadLogs">
+      </el-input>
+    </span>
+
+    <span>
       <button @click="logout" class="bt_logout">登出</button>
     </span>
 
@@ -25,7 +35,7 @@
         <tr v-for="(item, index) in logs" :key="index">
           <td>{{index}}</td>
           <td>{{item.ip}}</td>
-          <td>{{item.data}}</td>
+          <td>{{item.date}}</td>
           <td>{{item.method}}</td>
           <td>{{item.url}}</td>
           <td>{{item.protocol}}</td>
@@ -43,31 +53,50 @@ export default {
   name: 'Logs',
   data () {
     return {
-      logs: this.$route.params.logs
+      logs: [],
+      reqDate: ''
     }
   },
   methods: {
     logout () {
-      this.$http.get('/logout').then(response => {
-        console.log('response:')
-        console.log(response)
-        /*
-        statusCode
-        0: 成功
-        1: 失败
-         */
-        if (!response.headers.statusCode) {
-          // 清除token
-          localStorage.removeItem('token')
-          this.$router.push('/')
-        } else {
-          console.log('token清除失败')
-          alert('退出失败')
-        }
-      })
+      localStorage.removeItem('token')
+      this.$router.push('/')
     },
     toRootPage () {
-      this.$router.push('RootPage')
+      this.$router.push('/RootPage')
+    },
+    reloadLogs () {
+      // 正则检查202X年份，及30、31月份，2月检查1-29天
+      const regex = /(202[0-9])(((0[13578]|1[02])(0[0-9]|[12][0-9]|3[01]))|((0[469]|11)(0[0-9]|[12][0-9]|30))|((02)(0[0-9]|[12][0-9])))/g
+      if (!regex.test(this.reqDate)) {
+        console.log('日期格式不规范')
+        alert('日期格式不规范')
+        return
+      }
+      this.$http({
+        url: '/ShowLogs',
+        method: 'get',
+        headers: {
+          token: localStorage.getItem('token')
+        },
+        params: {
+          date: this.reqDate
+        }
+      }).then(resp => {
+        console.log('response', resp)
+        /*
+        code
+        0:成功
+        1:失败
+         */
+        console.log('logs', this.logs)
+        if (resp.data.code) {
+          console.log('查询日期无日志记录')
+          alert('查询日期无日志记录')
+          return
+        }
+        this.logs = resp.data.logs
+      })
     }
   }
 }
@@ -203,4 +232,8 @@ body {
   transform: translateY(-1px);
 }
 
+.elInput {
+  width: 200px;
+  float: left;
+  padding: 1.3em 3em;}
 </style>
